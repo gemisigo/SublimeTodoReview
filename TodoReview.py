@@ -11,11 +11,54 @@ import io
 import itertools
 import os
 import re
+import shutil
 import sublime
 import sublime_plugin
 import sys
 import threading
 import timeit
+
+SETTINGS = [
+	"case_sensitive",
+	"exclude_files",
+	"exclude_folders",
+	"merge_toss_target_paths",
+	"navigation_backward_skip",
+	"navigation_forward_skip",
+	"patterns",
+	"patterns_weight",
+	"render_folder_depth",
+	"render_header_date",
+	"render_header_format",
+	"render_include_folder",
+	"render_maxspaces",
+	"resolve_symlinks",
+	"toss_target_paths",
+]
+
+def get_settings(view):
+	# print("TossFile: load settings")
+	plugin_name = "TodoReview"
+	mgp = "merge_global_"
+	global_settings = sublime.load_settings("%s.sublime-settings" % plugin_name)
+	project_settings = view.settings().get(plugin_name, {})
+	combined_settings = {}
+
+	for setting in SETTINGS:
+		combined_settings[setting] = global_settings.get(setting)
+
+	# print(f"project settings: {project_settings}")
+	for key in project_settings:
+		# print(f"project key: {key}")
+		if key in SETTINGS:
+			if mgp+key in project_settings and project_settings[mgp + key]:
+				combined_settings[key] = global_settings[key] + project_settings[key]
+			else:
+				combined_settings[key] = project_settings[key]
+		else:
+			print(f"TodoReview: Invalid key [{key}] in project settings.")
+	return combined_settings
+
 
 class Settings():
 	def __init__(self, view, args):
@@ -293,10 +336,47 @@ class TodoReviewRender(sublime_plugin.TextCommand):
 			.replace('%f', f) \
 			.replace('%l', str(item['line']))
 
+
+
+
+
+
 class TodoReviewResults(sublime_plugin.TextCommand):
 	def run(self, edit, **args):
 		self.settings = self.view.settings()
+		self.combined_settings = get_settings(self.view)
+
+
 		if not self.settings.get('review_results'):
+			return
+		if args.get('toss'):
+			target_paths = self.combined_settings.get('toss_target_paths', None)
+			if not target_paths:
+				sublime.error_message("TodoReview: no toss target folder defined.")
+			else:
+				file_path = self.file_path_and_line('file')
+				numeric_prefix_pattern = re.compile('^(\\d+)_')
+				print(f"file_name: {file_path}")
+				prepared_target_paths = self.prepared_target_paths(target_paths)
+				print(f"prepared_target_paths: {prepared_target_paths}")
+
+				for target_path in prepared_target_paths:
+					if not os.path.exists(target_folder):
+						os.makedirs(target_folder)
+					files = os.listdir(target_path)
+					print(files)
+					prefixes = [pf.group(1) for pf in [numeric_prefix_pattern.match(file) for file in files] if pf]
+					print(prefixes)
+					return
+
+					# if os.path.isfile(target):
+					# 	response = sublime.yes_no_cancel_dialog(f"File {target} already exists. Overwrite?")
+					# 	if response == sublime.DIALOG_CANCEL:
+					# 		return
+					# 	elif response == sublime.DIALOG_NO:
+					# 		continue
+					# target_folder = os.path.dirname(target)
+					# shutil.copyfile(file_path, target)
 			return
 		if args.get('open'):
 			window = self.view.window()
@@ -305,6 +385,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			coords = '{0},{1}'.format(result.a, result.b)
 			i = self.settings.get('review_results')[coords]
 			p = "%f:%l".replace('%f', i['file']).replace('%l', str(i['line']))
+			print(f"p: {p}")
 			view = window.open_file(p, sublime.ENCODED_POSITION)
 			window.focus_view(view)
 			return
@@ -347,3 +428,35 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			self.view.add_regions('selection', [region], 'selected', 'dot')
 			self.view.show(sublime.Region(region.a, region.a + 5))
 			return
+
+	def file_path_and_line(self, which_part):
+		window = self.view.window()
+		index = int(self.settings.get('selected_result', -1))
+		result = self.view.get_regions('results')[index]
+		coords = '{0},{1}'.format(result.a, result.b)
+		i = self.settings.get('review_results')[coords]
+		file_name = i['file']
+		line = i['line']
+		if which_part == 'file':
+			return file_name
+		elif which_part == 'loc':
+			return line
+		elif which_part == 'both':
+			return f"{file}:{line}"
+
+	def prepared_target_paths(self, target_paths):
+		project_path = self.view.window().extract_variables()["project_path"]
+		for i, target_path in enumerate(target_paths):
+			target_path = os.path.normpath(target_path)
+			if not os.path.isabs(target_path):
+				target_path = os.path.join(project_path, target_path)
+			target_paths[i] = targpathh
+		return target_paths
+
+
+
+
+
+
+
+
