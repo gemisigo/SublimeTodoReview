@@ -1,24 +1,31 @@
 {
-	"patterns": {
-		"TODO": "TODO[\\s]*?:[\\s]*(?P<todo>.*)$"
-	},
-	"patterns_weight": {
-	},
-	"exclude_folders": [
-		"*.git*"
-	],
-	"exclude_files": [
-		"*.sublime-workspace",
-		"*.sublime-project"
-	],
-	"resolve_symlinks": true,
 	"case_sensitive": false,
-	"render_include_folder": true,
-	"render_folder_depth": 1,
-	"render_maxspaces": 50,
-	"render_header_format": "%d - %c files in %t secs",
-	"render_header_date": "%A %m/%d/%y at %I:%M%p",
-	"navigation_forward_skip": 10,
+	"exclude_files": ["*.sublime-workspace", "*.sublime-project"],
+	"exclude_folders": ["*.git*"],
 	"navigation_backward_skip": 10,
-	"toss_target_folder": []
+	"navigation_forward_skip": 10,
+	"patterns": {"TODO": "TODO[\\s]*?:[\\s]*(?P<todo>.*)$"},
+	"patterns_weight": {},
+	"render_folder_depth": 1,
+	"render_header_date": "%A %m/%d/%y at %I:%M%p",
+	"render_header_format": "%d - %c files in %t secs",
+	"render_include_folder": true,
+	"render_maxspaces": 50,
+	"resolve_symlinks": true,
+	"toss_target_folders": [],
+	"versions": {
+		"build_step": 3,
+		"confirm": false,
+		"deployment_folder": "",
+		"deployment_prefix": "",
+		"footer": "\\n\\n-- #endregion  == == the essence ends here == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == \\n\\nUSE `$\\{main\\}`;\\n-- #endregion deployment script ({fileversion}) ends ----------------------------------------------------------------------------------------------------------------\\n",
+		"header": "-- #region deployment script ({fileversion}) starts ----------------------------------------------------------------------------------------------------------------- \\n-- ------------------------------------------------------------------------------------------------------------------------------------------------------------- \\n \\n-- #region  == == the essence starts here == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==\\n\\n",
+		"major": 0,
+		"major_description": "",
+		"minor": 0,
+		"minor_description": "",
+		"prefix": "V",
+		"replacements": {},
+		"suffix": "__"
+	},
 }
