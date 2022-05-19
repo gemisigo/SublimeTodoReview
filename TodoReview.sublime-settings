@@ -1,23 +1,32 @@
 {
-	"patterns": {
-		"TODO": "TODO[\\s]*?:[\\s]*(?P<todo>.*)$"
-	},
-	"patterns_weight": {
-	},
-	"exclude_folders": [
-		"*.git*"
-	],
-	"exclude_files": [
-		"*.sublime-workspace",
-		"*.sublime-project"
-	],
-	"resolve_symlinks": true,
 	"case_sensitive": false,
-	"render_include_folder": true,
-	"render_folder_depth": 1,
-	"render_maxspaces": 50,
-	"render_header_format": "%d - %c files in %t secs",
-	"render_header_date": "%A %m/%d/%y at %I:%M%p",
+	"exclude_files": ["*.sublime-workspace", "*.sublime-project"],
+	"exclude_folders": ["*.git*"],
+	"include_folders": [],
+	"navigation_backward_skip": 10,
 	"navigation_forward_skip": 10,
-	"navigation_backward_skip": 10
+	"patterns": {"TODO": "TODO[\\s]*?:[\\s]*(?P<todo>.*)$"},
+	"patterns_weight": {},
+	"render_folder_depth": 1,
+	"render_header_date": "%A %m/%d/%y at %I:%M%p",
+	"render_header_format": "%d - %c files in %t secs",
+	"render_include_folder": true,
+	"render_maxspaces": 50,
+	"resolve_symlinks": true,
+	"toss_target_folders": [],
+	"version_build_step": 3,
+	"version_confirm": false,
+	"version_deployment_folder": "",
+	"version_deployment_prefix": "",
+	"version_footer": "\n\n-- #endregion  == == the essence ends here == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == \n\nUSE `${{main}}`;\n-- #endregion deployment script ({fileversion}) ends ----------------------------------------------------------------------------------------------------------------\n",
+	"version_header": "-- #region deployment script ({fileversion}) starts ----------------------------------------------------------------------------------------------------------------- \n-- ------------------------------------------------------------------------------------------------------------------------------------------------------------- \n \n-- #region  == == the essence starts here == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==\n\n",
+	"version_major": 0,
+	"version_major_description": "",
+	"version_minor": 0,
+	"version_minor_description": "",
+	"version_placeholder_delimiter_close": "}",
+	"version_placeholder_delimiter_open": "${",
+	"version_prefix": "V",
+	"version_placeholders": {},
+	"version_suffix": "__"
 }

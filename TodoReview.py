@@ -11,22 +11,75 @@ import io
 import itertools
 import os
 import re
+import shutil
 import sublime
 import sublime_plugin
 import sys
 import threading
 import timeit
 
+SETTINGS = [
+	"case_sensitive",
+	"encoding",
+	"exclude_files",
+	"exclude_folders",
+	"include_paths",
+	"merge_global_toss_target_paths",
+	"merge_global_versions",
+	"navigation_backward_skip",
+	"navigation_forward_skip",
+	"patterns",
+	"patterns_weight",
+	"render_folder_depth",
+	"render_header_date",
+	"render_header_format",
+	"render_include_folder",
+	"render_maxspaces",
+	"resolve_symlinks",
+	"toss_target_paths",
+	"version_build_step",
+	"version_build_zero",
+	"version_confirm",
+	"version_deployment_folder",
+	"version_deployment_prefix",
+	"version_footer",
+	"version_header",
+	"version_major",
+	"version_major_description",
+	"version_minor",
+	"version_minor_description",
+	"version_placeholders",
+	"version_placeholder_delimiter_close",
+	"version_placeholder_delimiter_open",
+	"version_prefix",
+	"version_suffix",
+]
+
 class Settings():
 	def __init__(self, view, args):
 		self.user = sublime.load_settings('TodoReview.sublime-settings')
 		if not args:
-			self.proj = view.settings().get('todoreview', {})
+			self.proj = view.settings().get('TodoReview', {})
 		else:
 			self.proj = args
+		self.temp = {}
 
-	def get(self, key, default):
-		return self.proj.get(key, self.user.get(key, default))
+	def set(self, key, value):
+		self.temp[key] = value
+		return value
+
+	def get(self, key, default=None):
+		if key not in SETTINGS:
+			sublime.error_message(f"TodoReview: Invalid key [{key}] in project settings.")
+		return self.temp.get(key, self.proj.get(key, self.user.get(key, default)))
+
+	def to_dict(self, which = None):
+		if which == 'user':
+			return self.user.to_dict()
+		elif which == 'proj':
+			return self.proj #.to_dict()
+		else:
+			return {"proj": self.proj, "user": self.user.to_dict()}
 
 class Engine():
 	def __init__(self, dirpaths, filepaths, view):
@@ -147,7 +200,8 @@ class Thread(threading.Thread):
 
 class TodoReviewCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **args):
-		global settings, thread
+		global settings, thread, project_path
+		project_path = self.view.window().extract_variables()["project_path"]
 		filepaths = []
 		self.args = args
 		window = self.view.window()
@@ -161,8 +215,10 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
 				print('TodoReview: File must be saved first')
 				return
 		else:
-			if not paths and settings.get('include_paths', False):
-				paths = settings.get('include_paths', False)
+			if not paths and (paths := settings.get('include_paths', False)):
+				# warning: gem's hacking here
+				paths = [os.path.normpath(path) if os.path.isabs(path) else os.path.normpath(os.path.join(project_path, path)) for path in paths ]
+
 			if args.get('open_files', False):
 				filepaths = [v.file_name() for v in window.views() if v.file_name()]
 			if not args.get('open_files_only', False):
@@ -293,10 +349,138 @@ class TodoReviewRender(sublime_plugin.TextCommand):
 			.replace('%f', f) \
 			.replace('%l', str(item['line']))
 
+
+
 class TodoReviewResults(sublime_plugin.TextCommand):
+
+	def accept_version(self, new_build_number):
+		builds = self.version_settings['builds']
+		footer = self.version_settings['footer']
+		header = self.version_settings['header']
+		if new_build_number in builds:
+			sublime.error_message('TodoReview: build already exists.')
+			return
+		copy_from = self.file_path_and_line('path')
+		copy_to = self.versioned_file('path')
+		version = self.versioned_file('version')
+		shutil.copyfile(copy_from, copy_to)
+
+		# adding of headers/footer
+		with open(copy_to, 'r+', encoding = 'utf-8') as f_to:
+			contents = f_to.read()
+			# to notdo: take sql dialect into account
+			# on second thought, you better not
+			versioned_contents = contents.format(fileversion=version)
+			versioned_header = header.format(fileversion=version)
+			versioned_footer = footer.format(fileversion=version)
+			wrapped = f'{versioned_header}{versioned_contents}{versioned_footer}'
+			# do replacements
+
+			for victim, placeholder in self.version_settings['placeholders'].items():
+				wrapped = wrapped.replace(victim, placeholder)
+			f_to.truncate(0)
+			f_to.seek(0)
+			f_to.write(wrapped)
+
+		# version number write-back
+		with open(copy_from, 'w', encoding = 'utf-8') as f_from:
+			# contents = f_from.read()
+			f_from.truncate(0)
+			f_from.seek(0)
+			f_from.write(versioned_contents)
+
+
+	def versioned_file(self, part):
+		build = self.version_settings['build']
+		file_name = self.version_settings['file_name']
+		major = self.version_settings['major']
+		minor = self.version_settings['minor']
+		prefix = self.version_settings['prefix']
+		suffix = self.version_settings['suffix']
+		version_path = self.version_settings['version_path']
+
+		if part == 'folder':
+			return version_path
+		elif part == 'version':
+			return f'{major}.{minor}.{build}'
+		elif part == 'name':
+			return f'{prefix}{major}.{minor}.{build}{suffix}{file_name}'
+		elif part == 'path':
+			return os.path.join(version_path, f'{prefix}{major}.{minor}.{build}{suffix}{file_name}')
+
 	def run(self, edit, **args):
+		global settings
 		self.settings = self.view.settings()
+		settings = Settings(self.view, args.get('settings', False))
+
+		self.project_path = self.view.window().extract_variables()["project_path"]
+		self.version_settings = {}
+
 		if not self.settings.get('review_results'):
+			return
+		if args.get('version'):
+			self.version_settings = self.validated_version_settings()
+			if not self.version_settings:
+				return
+			else:
+
+				build_step = self.version_settings['build_step']
+				build_zero = self.version_settings['build_zero']
+				confirm = self.version_settings['confirm']
+				prefix = self.version_settings['prefix']
+				suffix = self.version_settings['suffix']
+				version_path = self.version_settings['version_path']
+				self.version_settings['file_name'] = self.file_path_and_line('name')
+				if not os.path.exists(version_path):
+					os.makedirs(version_path)
+				files = os.listdir(version_path)
+				semver_pattern = re.compile(f'^{prefix}(?:(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<build>\\d+)){suffix}')
+				self.version_settings['builds'] = builds = [pf.group('build') for pf in [semver_pattern.match(file) for file in files] if pf]
+				self.version_settings['build'] = build = (int(max(builds)) + build_step if builds else build_zero)
+
+				# if builds:
+				# 	self.version_settings['build'] = build = int(max(builds)) + build_step
+				# else:
+				# 	self.version_settings['build'] = build = build_zero
+				new_file_name = self.versioned_file('name')
+
+				if confirm:
+					self. view.window().show_input_panel(
+						f'The versioned file will be: {new_file_name}, is this corret? Override the build number if not!',
+						str(build), self.accept_version, None, None)
+				else:
+					self.accept_version(build)
+			return
+
+		if args.get('toss'):
+			target_paths = self.settings.get('toss_target_paths', None)
+			if not target_paths:
+				sublime.error_message("TodoReview: no toss target folder defined.")
+			else:
+				file_path = self.file_path_and_line('path')
+				numeric_prefix_pattern = re.compile('^(\\d+)_')
+				prepared_target_paths = self.prepared_target_paths(target_paths)
+
+				for target_path in prepared_target_paths:
+					if not os.path.exists(target_path):
+						os.makedirs(target_path)
+					files = os.listdir(target_path)
+					prefixes = [pf.group(1) for pf in [numeric_prefix_pattern.match(file) for file in files] if pf]
+					if prefixes:
+						next_prefix = int(max(prefixes)) + 1
+					else:
+						next_prefix = 0
+					new_file_name = f"{next_prefix}_{os.path.split(file_path)[1]}"
+
+					target = os.path.join(target_path, new_file_name)
+					if os.path.isfile(target):
+						response = sublime.yes_no_cancel_dialog(f"File {target} already exists. Overwrite?")
+						if response == sublime.DIALOG_CANCEL:
+							return
+						elif response == sublime.DIALOG_NO:
+							continue
+					shutil.copyfile(file_path, target)
+				return
 			return
 		if args.get('open'):
 			window = self.view.window()
@@ -347,3 +531,108 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			self.view.add_regions('selection', [region], 'selected', 'dot')
 			self.view.show(sublime.Region(region.a, region.a + 5))
 			return
+
+	def validated_version_settings(self):
+		number_of_errors = 0
+		number_of_warnings = 0
+		if not (deployment_folder := settings.get('version_deployment_folder')):
+			sublime.error_message('TodoReview: no version deployment folder set.')
+			number_of_errors += 1
+		if not (prefix := settings.get('version_prefix')):
+			sublime.error_message('TodoReview: no version prefix set.')
+			number_of_errors += 1
+		if not (suffix := settings.get('version_suffix')):
+			sublime.error_message('TodoReview: no version suffix set.')
+			number_of_errors += 1
+		if not (major := settings.get('version_major')):
+			sublime.error_message('TodoReview: no version major set.')
+			number_of_errors += 1
+		if not (major_description := settings.get('version_major_description')):
+			print('TodoReview: no version major description set.')
+			number_of_warnings += 1
+		if not (minor := settings.get('version_minor')):
+			sublime.error_message('TodoReview: no version minor set.')
+			number_of_errors += 1
+		if not (minor_description := settings.get('version_minor_description')):
+			print('TodoReview: no version minor description set.')
+			number_of_warnings += 1
+		if not (placeholders := settings.get('version_placeholders')):
+			print('TodoReview: no placeholders set.')
+			number_of_warnings += 1
+
+		if number_of_errors:
+			return None
+		else:
+			build_zero = settings.get('version_build_zero', 101)
+			build_step = settings.get('version_build_step', 3)
+			footer = settings.get('version_footer', '-- header: ({fileversion})')
+			header = settings.get('version_header', '-- footer: ({fileversion})')
+			confirm = settings.get('version_confirm', False)
+			version_path = os.path.normpath(f'{major}{" - " + major_description if major_description else ""}/{minor}{" - " + minor_description if minor_description else ""}')
+			deployment_folder = os.path.normpath(deployment_folder)
+			if os.path.isabs(deployment_folder):
+				version_path = os.path.join(deployment_folder, version_path)
+			else:
+				version_path = os.path.join(self.project_path, deployment_folder, version_path)
+			# delimiter_open = settings.get('version_placeholder_delimiter_open', '${')
+			# delimiter_close = settings.get('version_placeholder_delimiter_close', '}')
+
+			# warning: doing this right might get complicated rapidly
+			# placeholders = {victim: f'{delimiter_open}{replacement}{delimiter_close}' for victim, replacement in settings.get('version_placeholders', {}).items() }
+
+			placeholders = settings.get('version_placeholders', {})
+
+			return {
+				'build': None,
+				'build_step': build_step,
+				'build_zero': build_zero,
+				'builds': None,
+				'confirm': confirm,
+				# 'delimiter_close': delimiter_close,
+				# 'delimiter_open': delimiter_open,
+				'file_name': None,
+				'footer': footer,
+				'header': header,
+				'major': major,
+				'minor': minor,
+				'placeholders': placeholders,
+				'prefix': prefix,
+				'suffix': suffix,
+				'version_path': version_path,
+			}
+
+	def file_path_and_line(self, which_part):
+		window = self.view.window()
+		index = int(self.settings.get('selected_result', -1))
+		result = self.view.get_regions('results')[index]
+		coords = '{0},{1}'.format(result.a, result.b)
+		i = self.settings.get('review_results')[coords]
+		file_name = i['file']
+		line = i['line']
+		if which_part == 'path':
+			return file_name
+		elif which_part == 'name':
+			return os.path.split(file_name)[1]
+		elif which_part == 'folder':
+			return os.path.split(file_name)[0]
+		elif which_part == 'loc':
+			return line
+		elif which_part == 'both':
+			return f"{file}:{line}"
+
+	def prepared_target_paths(self, target_paths):
+		project_path = self.view.window().extract_variables()["project_path"]
+		for i, target_path in enumerate(target_paths):
+			target_path = os.path.normpath(target_path)
+			if not os.path.isabs(target_path):
+				target_path = os.path.join(project_path, target_path)
+			target_paths[i] = target_path
+		return target_paths
+
+
+
+
+
+
+
+
