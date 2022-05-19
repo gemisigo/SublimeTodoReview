@@ -2,6 +2,7 @@
 	"case_sensitive": false,
 	"exclude_files": ["*.sublime-workspace", "*.sublime-project"],
 	"exclude_folders": ["*.git*"],
+	"include_folders": [],
 	"navigation_backward_skip": 10,
 	"navigation_forward_skip": 10,
 	"patterns": {"TODO": "TODO[\\s]*?:[\\s]*(?P<todo>.*)$"},
@@ -23,7 +24,9 @@
 	"version_major_description": "",
 	"version_minor": 0,
 	"version_minor_description": "",
+	"version_placeholder_delimiter_close": "}",
+	"version_placeholder_delimiter_open": "${",
 	"version_prefix": "V",
-	"version_replacements": {},
+	"version_placeholders": {},
 	"version_suffix": "__"
 }
