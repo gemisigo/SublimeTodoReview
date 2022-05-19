@@ -20,6 +20,7 @@ import timeit
 
 SETTINGS = [
 	"case_sensitive",
+	"encoding",
 	"exclude_files",
 	"exclude_folders",
 	"include_paths",
@@ -36,44 +37,41 @@ SETTINGS = [
 	"render_maxspaces",
 	"resolve_symlinks",
 	"toss_target_paths",
-	"versions",
+	"version_build_step",
+	"version_confirm",
+	"version_deployment_folder",
+	"version_deployment_prefix",
+	"version_footer",
+	"version_header",
+	"version_major",
+	"version_major_description",
+	"version_minor",
+	"version_minor_description",
+	"version_prefix",
+	"version_replacements",
+	"version_suffix",
 ]
-
-def get_settings(view):
-	# print("TossFile: load settings")
-	plugin_name = "TodoReview"
-	mgp = "merge_global_"
-	global_settings = sublime.load_settings("%s.sublime-settings" % plugin_name)
-	project_settings = view.settings().get(plugin_name, {})
-	combined_settings = {}
-
-	for setting in SETTINGS:
-		combined_settings[setting] = global_settings.get(setting)
-
-	for key in project_settings:
-		if key in SETTINGS:
-			if mgp+key in project_settings and project_settings[mgp + key]:
-				if isinstance(global_settings[key], str):
-					combined_settings[key] = global_settings[key] + project_settings[key]
-				elif isinstance(global_settings[key], dict):
-					combined_settings[key] = dict(itertools.chain(global_settings[key].items(), project_settings[key].items()))
-			else:
-				combined_settings[key] = project_settings[key]
-		else:
-			sublime.error_message(f"TodoReview: Invalid key [{key}] in project settings.")
-	return combined_settings
-
 
 class Settings():
 	def __init__(self, view, args):
 		self.user = sublime.load_settings('TodoReview.sublime-settings')
 		if not args:
-			self.proj = view.settings().get('todoreview', {})
+			self.proj = view.settings().get('TodoReview', {})
 		else:
 			self.proj = args
 
 	def get(self, key, default):
+		if key not in SETTINGS:
+			sublime.error_message(f"TodoReview: Invalid key [{key}] in project settings.")
 		return self.proj.get(key, self.user.get(key, default))
+
+	def to_dict(self, which = None):
+		if which == 'user':
+			return self.user.to_dict()
+		elif which == 'proj':
+			return self.proj #.to_dict()
+		else:
+			return {"proj": self.proj, "user": self.user.to_dict()}
 
 class Engine():
 	def __init__(self, dirpaths, filepaths, view):
@@ -194,7 +192,8 @@ class Thread(threading.Thread):
 
 class TodoReviewCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **args):
-		global settings, thread
+		global settings, thread, project_path
+		project_path = self.view.window().extract_variables()["project_path"]
 		filepaths = []
 		self.args = args
 		window = self.view.window()
@@ -208,8 +207,10 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
 				print('TodoReview: File must be saved first')
 				return
 		else:
-			if not paths and settings.get('include_paths', False):
-				paths = settings.get('include_paths', False)
+			if not paths and (paths := settings.get('include_paths', False)):
+				# warning: gem's hacking here
+				paths = [os.path.normpath(path) if os.path.isabs(path) else os.path.normpath(os.path.join(project_path, path)) for path in paths ]
+
 			if args.get('open_files', False):
 				filepaths = [v.file_name() for v in window.views() if v.file_name()]
 			if not args.get('open_files_only', False):
@@ -342,9 +343,6 @@ class TodoReviewRender(sublime_plugin.TextCommand):
 
 
 
-
-
-
 class TodoReviewResults(sublime_plugin.TextCommand):
 
 	def accept_version(self, new_build_number):
@@ -400,14 +398,13 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 
 	def run(self, edit, **args):
 		self.settings = self.view.settings()
-		self.combined_settings = get_settings(self.view)
-		print(f'combined_settings: {self.combined_settings}')
 		self.project_path = self.view.window().extract_variables()["project_path"]
 
 		if not self.settings.get('review_results'):
 			return
 		if args.get('version'):
 			self.version_settings = self.validated_version_settings()
+			return
 			if not self.version_settings:
 				return
 			else:
@@ -421,16 +418,12 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 				if not os.path.exists(version_path):
 					os.makedirs(version_path)
 				files = os.listdir(version_path)
-				print(f'files: {files}')
 				semver_pattern = re.compile(f'^{prefix}(?:(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<build>\\d+)){suffix}')
-				print(f'semver_pattern: {semver_pattern}')
 				self.version_settings['builds'] = builds = [pf.group('build') for pf in [semver_pattern.match(file) for file in files] if pf]
-				print(f'builds: {builds}')
 				if builds:
 					self.version_settings['build'] = build = int(max(builds)) + build_step
 				else:
 					self.version_settings['build'] = build = build_zero
-				print(f'build: {build}')
 				new_file_name = self.versioned_file('name')
 
 				if confirm:
@@ -439,33 +432,27 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 						str(build), self.accept_version, None, None)
 				else:
 					self.accept_version(build)
-				print(f'new file name: {new_file_name}')
-				print(f'args: {args}')
-
+			return
 
 		if args.get('toss'):
-			target_paths = self.combined_settings.get('toss_target_paths', None)
+			target_paths = self.settings.get('toss_target_paths', None)
 			if not target_paths:
 				sublime.error_message("TodoReview: no toss target folder defined.")
 			else:
 				file_path = self.file_path_and_line('path')
 				numeric_prefix_pattern = re.compile('^(\\d+)_')
-				print(f"file_path: {file_path}")
 				prepared_target_paths = self.prepared_target_paths(target_paths)
-				print(f"prepared_target_paths: {prepared_target_paths}")
 
 				for target_path in prepared_target_paths:
 					if not os.path.exists(target_path):
 						os.makedirs(target_path)
 					files = os.listdir(target_path)
-					print(files)
 					prefixes = [pf.group(1) for pf in [numeric_prefix_pattern.match(file) for file in files] if pf]
 					if prefixes:
 						next_prefix = int(max(prefixes)) + 1
 					else:
 						next_prefix = 0
 					new_file_name = f"{next_prefix}_{os.path.split(file_path)[1]}"
-					print(f"new_file_name: {new_file_name}")
 
 					target = os.path.join(target_path, new_file_name)
 					if os.path.isfile(target):
@@ -484,7 +471,6 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			coords = '{0},{1}'.format(result.a, result.b)
 			i = self.settings.get('review_results')[coords]
 			p = "%f:%l".replace('%f', i['file']).replace('%l', str(i['line']))
-			print(f"p: {p}")
 			view = window.open_file(p, sublime.ENCODED_POSITION)
 			window.focus_view(view)
 			return
@@ -529,10 +515,6 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			return
 
 	def validated_version_settings(self):
-		version_settings = self.combined_settings.get('versions')
-		if not version_settings:
-			sublime.error_message('TodoReview: no version settings set.')
-			return None
 		number_of_errors = 0
 		number_of_warnings = 0
 		if not (deployment_folder := version_settings.get('deployment_folder')):
