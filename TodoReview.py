@@ -22,6 +22,7 @@ SETTINGS = [
 	"case_sensitive",
 	"exclude_files",
 	"exclude_folders",
+	"include_paths",
 	"merge_global_toss_target_paths",
 	"merge_global_versions",
 	"navigation_backward_skip",
@@ -49,13 +50,9 @@ def get_settings(view):
 	for setting in SETTINGS:
 		combined_settings[setting] = global_settings.get(setting)
 
-	# print(f"project settings: {project_settings}")
 	for key in project_settings:
-		# print(f"project key: {key}")
 		if key in SETTINGS:
 			if mgp+key in project_settings and project_settings[mgp + key]:
-				# print(f'global_settings[{key}]: {global_settings[key]}')
-				# print(f'project_settings[{key}]: {project_settings[key]}')
 				if isinstance(global_settings[key], str):
 					combined_settings[key] = global_settings[key] + project_settings[key]
 				elif isinstance(global_settings[key], dict):
@@ -64,7 +61,6 @@ def get_settings(view):
 				combined_settings[key] = project_settings[key]
 		else:
 			sublime.error_message(f"TodoReview: Invalid key [{key}] in project settings.")
-	# print(f'combined_settings: {combined_settings}')
 	return combined_settings
 
 
@@ -352,7 +348,6 @@ class TodoReviewRender(sublime_plugin.TextCommand):
 class TodoReviewResults(sublime_plugin.TextCommand):
 
 	def accept_version(self, new_build_number):
-		print(f'apply version: {self.version_settings}')
 		builds = self.version_settings['builds']
 		footer = self.version_settings['footer']
 		header = self.version_settings['header']
@@ -361,11 +356,29 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			return
 		copy_from = self.file_path_and_line('path')
 		copy_to = self.versioned_file('path')
+		version = self.versioned_file('version')
 		shutil.copyfile(copy_from, copy_to)
-		header = header.format(fileversion = self.versioned_file('version'))
-		# todo: implement adding of headers/footer
-		# todo: implement replacements
-		# todo: implement version number write-back
+
+		# adding of headers/footer
+		with open(copy_to, 'r+', encoding = 'utf-8') as f_to:
+			contents = f_to.read()
+			# todo: take sql dialect into account
+			versioned_contents = contents.format(fileversion=version)
+			versioned_header = header.format(fileversion=version)
+			versioned_footer = footer.format(fileversion=version)
+			wrapped = f'{versioned_header}{versioned_contents}{versioned_footer}'
+			# todo: implement replacements
+			f_to.truncate(0)
+			f_to.seek(0)
+			f_to.write(wrapped)
+
+		# version number write-back
+		with open(copy_from, 'w', encoding = 'utf-8') as f_from:
+			# contents = f_from.read()
+			f_from.truncate(0)
+			f_from.seek(0)
+			f_from.write(versioned_contents)
+
 
 	def versioned_file(self, part):
 		build = self.version_settings['build']
@@ -388,7 +401,6 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 	def run(self, edit, **args):
 		self.settings = self.view.settings()
 		self.combined_settings = get_settings(self.view)
-		# print(f'combined_settings: {self.combined_settings["versions"]}')
 		print(f'combined_settings: {self.combined_settings}')
 		self.project_path = self.view.window().extract_variables()["project_path"]
 
@@ -546,12 +558,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			number_of_warnings += 1
 		if not (replacements := version_settings.get('replacements')):
 			print('TodoReview: no replacements set.')
-# // to do: whatever
-# // to_do: whatever
-# //
-# // ask: for more
-# // TO DO: nah
-# // TO_DO: nah
+
 		if number_of_errors:
 			return None
 		else:
