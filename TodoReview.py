@@ -38,6 +38,7 @@ SETTINGS = [
 	"resolve_symlinks",
 	"toss_target_paths",
 	"version_build_step",
+	"version_build_zero",
 	"version_confirm",
 	"version_deployment_folder",
 	"version_deployment_prefix",
@@ -47,8 +48,10 @@ SETTINGS = [
 	"version_major_description",
 	"version_minor",
 	"version_minor_description",
+	"version_placeholders",
+	"version_placeholder_delimiter_close",
+	"version_placeholder_delimiter_open",
 	"version_prefix",
-	"version_replacements",
 	"version_suffix",
 ]
 
@@ -59,11 +62,16 @@ class Settings():
 			self.proj = view.settings().get('TodoReview', {})
 		else:
 			self.proj = args
+		self.temp = {}
 
-	def get(self, key, default):
+	def set(self, key, value):
+		self.temp[key] = value
+		return value
+
+	def get(self, key, default=None):
 		if key not in SETTINGS:
 			sublime.error_message(f"TodoReview: Invalid key [{key}] in project settings.")
-		return self.proj.get(key, self.user.get(key, default))
+		return self.temp.get(key, self.proj.get(key, self.user.get(key, default)))
 
 	def to_dict(self, which = None):
 		if which == 'user':
@@ -360,12 +368,16 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 		# adding of headers/footer
 		with open(copy_to, 'r+', encoding = 'utf-8') as f_to:
 			contents = f_to.read()
-			# todo: take sql dialect into account
+			# to notdo: take sql dialect into account
+			# on second thought, you better not
 			versioned_contents = contents.format(fileversion=version)
 			versioned_header = header.format(fileversion=version)
 			versioned_footer = footer.format(fileversion=version)
 			wrapped = f'{versioned_header}{versioned_contents}{versioned_footer}'
-			# todo: implement replacements
+			# do replacements
+
+			for victim, placeholder in self.version_settings['placeholders'].items():
+				wrapped = wrapped.replace(victim, placeholder)
 			f_to.truncate(0)
 			f_to.seek(0)
 			f_to.write(wrapped)
@@ -397,19 +409,23 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			return os.path.join(version_path, f'{prefix}{major}.{minor}.{build}{suffix}{file_name}')
 
 	def run(self, edit, **args):
+		global settings
 		self.settings = self.view.settings()
+		settings = Settings(self.view, args.get('settings', False))
+
 		self.project_path = self.view.window().extract_variables()["project_path"]
+		self.version_settings = {}
 
 		if not self.settings.get('review_results'):
 			return
 		if args.get('version'):
 			self.version_settings = self.validated_version_settings()
-			return
 			if not self.version_settings:
 				return
 			else:
 
 				build_step = self.version_settings['build_step']
+				build_zero = self.version_settings['build_zero']
 				confirm = self.version_settings['confirm']
 				prefix = self.version_settings['prefix']
 				suffix = self.version_settings['suffix']
@@ -420,10 +436,12 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 				files = os.listdir(version_path)
 				semver_pattern = re.compile(f'^{prefix}(?:(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<build>\\d+)){suffix}')
 				self.version_settings['builds'] = builds = [pf.group('build') for pf in [semver_pattern.match(file) for file in files] if pf]
-				if builds:
-					self.version_settings['build'] = build = int(max(builds)) + build_step
-				else:
-					self.version_settings['build'] = build = build_zero
+				self.version_settings['build'] = build = (int(max(builds)) + build_step if builds else build_zero)
+
+				# if builds:
+				# 	self.version_settings['build'] = build = int(max(builds)) + build_step
+				# else:
+				# 	self.version_settings['build'] = build = build_zero
 				new_file_name = self.versioned_file('name')
 
 				if confirm:
@@ -517,57 +535,68 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 	def validated_version_settings(self):
 		number_of_errors = 0
 		number_of_warnings = 0
-		if not (deployment_folder := version_settings.get('deployment_folder')):
+		if not (deployment_folder := settings.get('version_deployment_folder')):
 			sublime.error_message('TodoReview: no version deployment folder set.')
 			number_of_errors += 1
-		if not (prefix := version_settings.get('prefix')):
+		if not (prefix := settings.get('version_prefix')):
 			sublime.error_message('TodoReview: no version prefix set.')
 			number_of_errors += 1
-		if not (suffix := version_settings.get('suffix')):
+		if not (suffix := settings.get('version_suffix')):
 			sublime.error_message('TodoReview: no version suffix set.')
 			number_of_errors += 1
-		if not (major := version_settings.get('major')):
+		if not (major := settings.get('version_major')):
 			sublime.error_message('TodoReview: no version major set.')
 			number_of_errors += 1
-		if not (major_description := version_settings.get('major_description')):
+		if not (major_description := settings.get('version_major_description')):
 			print('TodoReview: no version major description set.')
 			number_of_warnings += 1
-		if not (minor := version_settings.get('minor')):
+		if not (minor := settings.get('version_minor')):
 			sublime.error_message('TodoReview: no version minor set.')
 			number_of_errors += 1
-		if not (minor_description := version_settings.get('minor_description')):
+		if not (minor_description := settings.get('version_minor_description')):
 			print('TodoReview: no version minor description set.')
 			number_of_warnings += 1
-		if not (replacements := version_settings.get('replacements')):
-			print('TodoReview: no replacements set.')
+		if not (placeholders := settings.get('version_placeholders')):
+			print('TodoReview: no placeholders set.')
+			number_of_warnings += 1
 
 		if number_of_errors:
 			return None
 		else:
-			build_zero = version_settings.get('build_zero', 101)
-			build_step = version_settings.get('build_step', 3)
-			footer = version_settings.get('footer', '-- header: ({fileversion})')
-			header = version_settings.get('header', '-- footer: ({fileversion})')
-			confirm = version_settings.get('confirm', False)
+			build_zero = settings.get('version_build_zero', 101)
+			build_step = settings.get('version_build_step', 3)
+			footer = settings.get('version_footer', '-- header: ({fileversion})')
+			header = settings.get('version_header', '-- footer: ({fileversion})')
+			confirm = settings.get('version_confirm', False)
 			version_path = os.path.normpath(f'{major}{" - " + major_description if major_description else ""}/{minor}{" - " + minor_description if minor_description else ""}')
 			deployment_folder = os.path.normpath(deployment_folder)
 			if os.path.isabs(deployment_folder):
 				version_path = os.path.join(deployment_folder, version_path)
 			else:
 				version_path = os.path.join(self.project_path, deployment_folder, version_path)
+			# delimiter_open = settings.get('version_placeholder_delimiter_open', '${')
+			# delimiter_close = settings.get('version_placeholder_delimiter_close', '}')
+
+			# warning: doing this right might get complicated rapidly
+			# placeholders = {victim: f'{delimiter_open}{replacement}{delimiter_close}' for victim, replacement in settings.get('version_placeholders', {}).items() }
+
+			placeholders = settings.get('version_placeholders', {})
+
 			return {
 				'build': None,
 				'build_step': build_step,
 				'build_zero': build_zero,
 				'builds': None,
 				'confirm': confirm,
+				# 'delimiter_close': delimiter_close,
+				# 'delimiter_open': delimiter_open,
 				'file_name': None,
 				'footer': footer,
 				'header': header,
 				'major': major,
 				'minor': minor,
+				'placeholders': placeholders,
 				'prefix': prefix,
-				'replacements': replacements,
 				'suffix': suffix,
 				'version_path': version_path,
 			}
