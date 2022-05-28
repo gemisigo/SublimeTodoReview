@@ -78,5 +78,13 @@
 			{"key": "setting.todo_results"}
 		],
 		"args": {"version": true, "refresh": true}
+	},
+	{
+		"keys": ["d"], "command": "todo_review_results",
+		"context": [
+			{"key": "setting.command_mode", "operand": true},
+			{"key": "setting.todo_results"}
+		],
+		"args": {"build_doc": true}
 	}
 ]
