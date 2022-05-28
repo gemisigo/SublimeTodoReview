@@ -16,6 +16,7 @@
 	"toss_target_folders": [],
 	"version_build_step": 3,
 	"version_confirm": false,
+	"version_doc_folder": "",
 	"version_deployment_folder": "",
 	"version_deployment_prefix": "",
 	"version_footer": "\n\n-- #endregion  == == the essence ends here == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == \n\nUSE `${{main}}`;\n-- #endregion deployment script ({fileversion}) ends ----------------------------------------------------------------------------------------------------------------\n",
