@@ -136,5 +136,5 @@ class BuildVersionDoc:
                     for b, bd in sorted(minor_data.items(), reverse=True):
                         a, c, d, fi = bd["author"], bd["comment"], bd["date"], bd["file"]
                         bi = b if b > -1 else "Build unknown"
-                        bdw = f"\n\t{ma.mi.bi} - {c}\t\t(in [{fi}] by {a} at {d})"
+                        bdw = f"\n\t{ma}.{mi}.{bi} - {c}\t\t(in [{fi}] by {a} at {d})"
                         f.write(bdw)
