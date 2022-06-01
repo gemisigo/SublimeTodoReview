@@ -6,8 +6,17 @@
   Created: 2022-05-28 20:49:06
 """
 
-TYPES = {"new": "Tables", "mod": "Tables", "udf": "Functions",
-         "ufs": "Functions", "usp": "Stored procedures", "unknown": "unknown",
-         "view": "Views", "trig": "Triggers", "fk": "Foreign keys", "login": "Logins",
-                 "schema": "Schemas", "ix": "Indexes",
+TYPES = {
+  "fk": "Foreign keys",
+  "ix": "Indexes",
+  "login": "Logins",
+  "mod": "Tables",
+  "new": "Tables",
+  "schema": "Schemas",
+  "trig": "Triggers",
+  "udf": "Functions",
+  "ufs": "Functions",
+  "unknown": "unknown",
+  "usp": "Stored procedures",
+  "view": "Views"
          }
