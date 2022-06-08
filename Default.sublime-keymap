@@ -71,6 +71,14 @@
 		],
 		"args": {"toss": true, "refresh": true}
 	},
+		{
+		"keys": ["e"], "command": "todo_review_results",
+		"context": [
+			{"key": "setting.command_mode", "operand": true},
+			{"key": "setting.todo_results"}
+		],
+		"args": {"open_in_external_editor": true}
+	},
 	{
 		"keys": ["v"], "command": "todo_review_results",
 		"context": [

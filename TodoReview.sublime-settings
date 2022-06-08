@@ -2,6 +2,7 @@
 	"case_sensitive": false,
 	"exclude_files": ["*.sublime-workspace", "*.sublime-project"],
 	"exclude_folders": ["*.git*"],
+	"external_editor": false,
 	"include_folders": [],
 	"navigation_backward_skip": 10,
 	"navigation_forward_skip": 10,
