@@ -51,7 +51,7 @@ class BuildVersionDoc:
                 print(f'{path=}')
             for root, dirs, files in os.walk(path):
                 for file in files:
-                    print(f"processing file {file=}")
+                    print(f"processing file {file=}...", end="")
                     match = object_pattern.match(file)
                     if match:
                         files_processed.append(os.path.join(root, file))
@@ -96,8 +96,10 @@ class BuildVersionDoc:
                                         version_data = {"date": date, "author": author,
                                                         "file": file, "comment": comment, }
                                         versions[major][minor][build] = version_data
+                        print(" Done!")
                     else:
-                        print(f"skipping file: {file}")
+                        # print(f"skipping file: {file}")
+                        print(f" Skipped!")
                         files_skipped.append(os.path.join(root, file))
         if self.debug:
             for fp in files_processed:
