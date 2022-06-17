@@ -19,6 +19,7 @@ import sys
 import threading
 import timeit
 
+from string import Template
 from TodoReview.BuildVersionDoc import BuildVersionDoc
 from TodoReview.helpers import run_cli
 
@@ -59,6 +60,7 @@ SETTINGS = [
 	"version_placeholder_delimiter_open",
 	"version_prefix",
 	"version_suffix",
+	"version_write_back",
 ]
 
 
@@ -381,6 +383,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 		builds = self.version_settings['builds']
 		footer = self.version_settings['footer']
 		header = self.version_settings['header']
+		write_back = self.version_settings['write_back']
 		if new_build_number in builds:
 			sublime.error_message('TodoReview: build already exists.')
 			return
@@ -394,9 +397,18 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			contents = f_to.read()
 			# to notdo: take sql dialect into account
 			# on second thought, you better not
-			versioned_contents = contents.format(fileversion=version)
-			versioned_header = header.format(fileversion=version)
-			versioned_footer = footer.format(fileversion=version)
+
+			# found a better way
+			# versioned_contents = contents.format(fileversion=version)
+			# versioned_header = header.format(fileversion=version)
+			# versioned_footer = footer.format(fileversion=version)
+			# do this below for older placeholders using {fileversion}
+			contents = contents.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
+			header = header.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
+			footer = footer.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
+			versioned_contents = Template(contents).safe_substitute(fileversion=version)
+			versioned_header = Template(header).safe_substitute(fileversion=version)
+			versioned_footer = Template(footer).safe_substitute(fileversion=version)
 			wrapped = f'{versioned_header}{versioned_contents}{versioned_footer}'
 			# do replacements
 
@@ -407,11 +419,12 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			f_to.write(wrapped)
 
 		# version number write-back
-		with open(copy_from, 'w', encoding='utf-8') as f_from:
-			# contents = f_from.read()
-			f_from.truncate(0)
-			f_from.seek(0)
-			f_from.write(versioned_contents)
+		if write_back:
+			with open(copy_from, 'w', encoding='utf-8') as f_from:
+				# contents = f_from.read()
+				f_from.truncate(0)
+				f_from.seek(0)
+				f_from.write(versioned_contents)
 
 	def versioned_file(self, part):
 		build = self.version_settings['build']
@@ -628,6 +641,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 				vdf = os.path.join(self.project_path, vdf)
 
 			placeholders = settings.get('version_placeholders', {})
+			write_back = settings.get('version_write_back', False)
 
 			return {
 				'build': None,
@@ -647,7 +661,8 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 				'suffix': suffix,
 				'doc_folder': vdf,
 				'version_path': version_path,
-			}
+				'write_back': write_back
+ 			}
 
 	def file_path_and_line(self, which_part):
 		#         window = self.view.window()
