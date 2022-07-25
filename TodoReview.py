@@ -403,10 +403,11 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			# versioned_header = header.format(fileversion=version)
 			# versioned_footer = footer.format(fileversion=version)
 			# do this below for older placeholders using {fileversion}
+			contents = contents.replace('$$$', 'triple_dollar_sign')
 			contents = contents.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
 			header = header.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
 			footer = footer.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
-			versioned_contents = Template(contents).safe_substitute(fileversion=version)
+			versioned_contents = Template(contents).safe_substitute(fileversion=version).replace('triple_dollar_sign', '$$$')
 			versioned_header = Template(header).safe_substitute(fileversion=version)
 			versioned_footer = Template(footer).safe_substitute(fileversion=version)
 			wrapped = f'{versioned_header}{versioned_contents}{versioned_footer}'
