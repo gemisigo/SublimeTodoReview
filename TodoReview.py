@@ -469,7 +469,8 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			print('TodoReview: building doc...')
 			self.version_settings = self.validated_version_settings()
 			vdf = self.version_settings.get('doc_folder')
-			doc_source_path = settings.get('include_paths')
+			# doc_source_path = settings.get('include_paths')
+			doc_source_path = [self.version_settings.get('version_path'),]
 			if doc_source_path and vdf:
 				BuildVersionDoc(doc_source_path, vdf, project_path)
 			return
