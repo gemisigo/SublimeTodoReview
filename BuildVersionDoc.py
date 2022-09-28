@@ -33,6 +33,9 @@ class BuildVersionDoc:
         self.debug = True
         self.project_path = a_project_path
 
+        print('collecting objects')
+        print(f'{self.source_paths=}')
+        print(f'{self.target_path=}')
         o, v, p, s = self.collect_objects_and_versions()
         self.save_changelog_by_object(o)
         self.save_changelog_by_version(v)
@@ -46,12 +49,16 @@ class BuildVersionDoc:
         files_skipped = []
 
         for path in self.source_paths:
+            print(f'{path=}')
             if not os.path.isabs(path):
                 path = os.path.join(self.project_path, path)
                 print(f'{path=}')
             for root, dirs, files in os.walk(path):
                 for file in files:
-                    print(f"processing file {file=}...", end="")
+                    # print(f'{file=}')
+                    if file != 'tram_train_V4.4.119__usp.volan.usp_get_termekek.sql':
+                        continue
+                    print(f"processing file {file=}", end="... ")
                     match = object_pattern.match(file)
                     if match:
                         files_processed.append(os.path.join(root, file))
@@ -61,8 +68,7 @@ class BuildVersionDoc:
                         with open(os.path.join(root, file), "r", encoding="iso-8859-2") as f:
                             contents = f.read()
                             version_list_match = version_list_pattern.search(contents)
-                            version_entries = version_list_match.group(
-                                "versions").strip() if version_list_match else None
+                            version_entries = version_list_match.group("versions").strip() if version_list_match else None
                             if version_entries:
                                 if not object_type in objects:
                                     objects[object_type] = {}

@@ -405,15 +405,18 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			# do this below for older placeholders using {fileversion}
 			contents = contents.replace('$$$', 'triple_dollar_sign')
 			contents = contents.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
+			contents = contents.replace('{fileversion_dnr}','${fileversion_dnr}').replace('$${fileversion_dnr}','${fileversion_dnr}')
 			header = header.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
 			footer = footer.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
 			versioned_contents = Template(contents).safe_substitute(fileversion=version).replace('triple_dollar_sign', '$$$')
 			versioned_header = Template(header).safe_substitute(fileversion=version)
 			versioned_footer = Template(footer).safe_substitute(fileversion=version)
-			wrapped = f'{versioned_header}{versioned_contents}{versioned_footer}'
+#			wrapped = f'{versioned_header}{versioned_contents}{versioned_footer}'
+			wrapped = f'{versioned_header}{Template(versioned_contents).safe_substitute(fileversion_dnr=version)}{versioned_footer}'
 			# do replacements
 
 			for victim, placeholder in self.version_settings['placeholders'].items():
+				print(f'replacing [{victim}] with [{placeholder}]')
 				wrapped = wrapped.replace(victim, placeholder)
 			f_to.truncate(0)
 			f_to.seek(0)
@@ -470,7 +473,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			self.version_settings = self.validated_version_settings()
 			vdf = self.version_settings.get('doc_folder')
 			# doc_source_path = settings.get('include_paths')
-			doc_source_path = [self.version_settings.get('version_path'),]
+			doc_source_path = [self.version_settings.get('deployment_folder'),]
 			if doc_source_path and vdf:
 				BuildVersionDoc(doc_source_path, vdf, project_path)
 			return
@@ -606,13 +609,13 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 		if not (suffix := settings.get('version_suffix')):
 			sublime.error_message('TodoReview: no version suffix set.')
 			number_of_errors += 1
-		if not (major := settings.get('version_major')):
+		if (major := settings.get('version_major')) is None:
 			sublime.error_message('TodoReview: no version major set.')
 			number_of_errors += 1
 		if not (major_description := settings.get('version_major_description')):
 			print('TodoReview: no version major description set.')
 			number_of_warnings += 1
-		if not (minor := settings.get('version_minor')):
+		if (minor := settings.get('version_minor')) is None:
 			sublime.error_message('TodoReview: no version minor set.')
 			number_of_errors += 1
 		if not (minor_description := settings.get('version_minor_description')):
@@ -637,6 +640,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			deployment_folder = os.path.normpath(deployment_folder)
 			if os.path.isabs(deployment_folder):
 				version_path = os.path.join(deployment_folder, version_path)
+				deployment_folder = os.path.join(self.project_path, deployment_folder)
 			else:
 				version_path = os.path.join(self.project_path, deployment_folder, version_path)
 			if not os.path.isabs(vdf):
@@ -663,7 +667,8 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 				'suffix': suffix,
 				'doc_folder': vdf,
 				'version_path': version_path,
-				'write_back': write_back
+				'write_back': write_back,
+				"deployment_folder": deployment_folder
  			}
 
 	def file_path_and_line(self, which_part):
