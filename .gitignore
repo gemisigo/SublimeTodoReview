@@ -1,2 +1,7 @@
 *.sublime-project
 *.sublime-workspace
+__pycache__/
+
+TodoReview.wpr
+
+TodoReview.wpu

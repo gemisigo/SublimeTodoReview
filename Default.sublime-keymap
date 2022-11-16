@@ -88,6 +88,14 @@
 		"args": {"version": true, "refresh": true}
 	},
 	{
+		"keys": ["w"], "command": "todo_review_results",
+		"context": [
+			{"key": "setting.command_mode", "operand": true},
+			{"key": "setting.todo_results"}
+		],
+		"args": {"version_all": true, "refresh": true}
+	},
+	{
 		"keys": ["d"], "command": "todo_review_results",
 		"context": [
 			{"key": "setting.command_mode", "operand": true},
