@@ -53,7 +53,7 @@ class BuildVersionDoc:
         self.printd(f"{self.target_path=}", 10)
         self.printd("collecting objects")
         o, v, p, s = self.collect_objects_and_versions()
-        # self.save_changelog_by_object(o)
+        self.save_changelog_by_object(o)
         self.save_changelog_by_version(v)
 
     def collect_objects_and_versions(self) -> None:
