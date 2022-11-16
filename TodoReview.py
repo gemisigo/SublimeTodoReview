@@ -181,7 +181,6 @@ class Engine():
 		else:
 			return os.path.expanduser(os.path.abspath(directory))
 
-
 class Thread(threading.Thread):
 	def __init__(self, engine, callback):
 		self.i = 0
@@ -408,7 +407,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			contents = contents.replace('{fileversion_dnr}','${fileversion_dnr}').replace('$${fileversion_dnr}','${fileversion_dnr}')
 			header = header.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
 			footer = footer.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
-			versioned_contents = Template(contents).safe_substitute(fileversion=version).replace('triple_dollar_sign', '$$$')
+			versioned_contents = Template(contents).safe_substitute(fileversion=version).replace('triple_dollar_sign', '$$$$$')
 			versioned_header = Template(header).safe_substitute(fileversion=version)
 			versioned_footer = Template(footer).safe_substitute(fileversion=version)
 #			wrapped = f'{versioned_header}{versioned_contents}{versioned_footer}'
@@ -474,6 +473,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			vdf = self.version_settings.get('doc_folder')
 			# doc_source_path = settings.get('include_paths')
 			doc_source_path = [self.version_settings.get('deployment_folder'),]
+			print(f"TodoReview: TodoReviewResults - {doc_source_path=}, {vdf=}")
 			if doc_source_path and vdf:
 				BuildVersionDoc(doc_source_path, vdf, project_path)
 			return
