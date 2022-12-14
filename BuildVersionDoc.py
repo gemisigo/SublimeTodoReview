@@ -8,29 +8,12 @@
 import os
 import inspect
 
-
 from TodoReview.patterns import object_pattern, version_list_pattern, version_entry_pattern, version_pattern
 from TodoReview.types import TYPES
 
-
-
-
-
-
 class BuildVersionDoc:
-    """
-
-    Attributes
-    ----------
-            attribute: type
-                    description
-
-    Methods
-    -------
-            method(params: type)
-                    description
-    """
-    debug_level = 10
+    """Build version documentation by object and by version"""
+    debug_level = 40
 
     def printd(self, text : str, debug_level : int = 20, end : str = "\n"):
         """Print debug"""
@@ -53,7 +36,7 @@ class BuildVersionDoc:
         self.printd(f"{self.target_path=}", 10)
         self.printd("collecting objects")
         o, v, p, s = self.collect_objects_and_versions()
-        # self.save_changelog_by_object(o)
+        self.save_changelog_by_object(o)
         self.save_changelog_by_version(v)
 
     def collect_objects_and_versions(self) -> None:
@@ -128,7 +111,7 @@ class BuildVersionDoc:
         self.printd(f"{self.target_path=}, {a_file_name=}")
         self.printd(f"{os.path.join(self.target_path, a_file_name)=}")
         with open(os.path.join(self.target_path, a_file_name), "w", encoding="utf8") as f:
-            f.write("# Changelog by object\\n[toc]\n\n---\n\n")
+            f.write("# Changelog by object\n[toc]\n\n---\n\n")
             self.printd(f"{a_objects.items()=}")
 
             for object_type, schemas in sorted(a_objects.items()):
@@ -140,8 +123,23 @@ class BuildVersionDoc:
                     for object_name, data in sorted(objects.items()):
                         self.printd(f"processing {object_name=}")
                         f.write(f"\n\n#### {object_name}")
-                        f.write(f"\nfile: {data['file']}")
-                        f.write(f"\nversions:\n{data['versions']}")
+                        f.write("|Date|Version|Comments|Author|\n|---|---|---|---|\n")
+                        version_matches = version_entry_pattern.findall(data)
+                        for vms in version_matches:
+                            date = vms[0].strip()
+                            author = vms[1].strip()
+                            vm = version_pattern.match(vms[2].strip())
+                            major = int(vm.group("major")) if vm else -1
+                            minor = int(vm.group("minor")) if vm else -1
+                            build = int(vm.group("build")) if vm else -1
+                            version = f"{major}.{minor}.{build}"
+                            comment = vms[3].strip()
+                            version_data = f"{date}|{version}|{comment}|{author}\n"
+                            f.write(version_data)
+                        # f.write(f"\nfile: {data['file']}")
+                        # f.write(f"\nversions:\n{data['versions']}")
+
+
 
     def save_changelog_by_version(self, a_versions: dict, a_file_name: str = "changelog_by_version.md") -> None:
         """Convert a dictionary of version into a changelog file"""

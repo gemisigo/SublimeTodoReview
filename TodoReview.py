@@ -18,6 +18,7 @@ import sublime_plugin
 import sys
 import threading
 import timeit
+import inspect
 
 from string import Template
 from TodoReview.BuildVersionDoc import BuildVersionDoc
@@ -92,6 +93,16 @@ class Settings():
 
 
 class Engine():
+
+	debug_level = 10
+
+	def printd(self, text: str, debug_level: int = 20, end: str = "\n"):
+		"""Print debug"""
+		if self.debug_level <= debug_level:
+			caller = inspect.stack()[1][3]  # will give the caller of foos name, if something called foo
+			dname = f"{self.__class__.__name__}.{caller} [{debug_level}]"
+			print(f"{dname}: {text}", end = end)
+
 	def __init__(self, dirpaths, filepaths, view):
 		self.view = view
 		self.dirpaths = dirpaths
@@ -407,7 +418,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			contents = contents.replace('{fileversion_dnr}','${fileversion_dnr}').replace('$${fileversion_dnr}','${fileversion_dnr}')
 			header = header.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
 			footer = footer.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
-			versioned_contents = Template(contents).safe_substitute(fileversion=version).replace('triple_dollar_sign', '$$$$$')
+			versioned_contents = Template(contents).safe_substitute(fileversion=version)
 			versioned_header = Template(header).safe_substitute(fileversion=version)
 			versioned_footer = Template(footer).safe_substitute(fileversion=version)
 #			wrapped = f'{versioned_header}{versioned_contents}{versioned_footer}'
@@ -419,7 +430,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 				wrapped = wrapped.replace(victim, placeholder)
 			f_to.truncate(0)
 			f_to.seek(0)
-			f_to.write(wrapped)
+			f_to.write(wrapped.replace('triple_dollar_sign', '$$$'))
 
 		# version number write-back
 		if write_back:
@@ -427,7 +438,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 				# contents = f_from.read()
 				f_from.truncate(0)
 				f_from.seek(0)
-				f_from.write(versioned_contents)
+				f_from.write(versioned_contents.replace('triple_dollar_sign', '$$$'))
 
 	def versioned_file(self, part):
 		build = self.version_settings['build']
