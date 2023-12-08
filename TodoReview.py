@@ -119,7 +119,7 @@ class Engine():
 		match_folders = [fnmatch.translate(p) for p in patt_folders]
 
 		self.patterns = re.compile(match_patterns, case)
-		self.priority = re.compile(r'\(([0-9]{1,2})\)')
+		self.priority = re.compile(r'\(([0-9]{1,5})\)')
 		self.exclude_files = [re.compile(p) for p in match_files]
 		self.exclude_folders = [re.compile(p) for p in match_folders]
 		self.open = self.view.window().views()
@@ -168,7 +168,7 @@ class Engine():
 							if(priority_match):
 								priority = int(priority_match.group(1))
 							else:
-								priority = 50
+								priority = 5000
 							yield {
 								'file': p,
 								'patt': patt,
