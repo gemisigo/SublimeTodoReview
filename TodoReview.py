@@ -508,10 +508,11 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 				semver_pattern = re.compile(
 					f'^{prefix}(?:(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<build>\\d+)){suffix}')
 				self.version_settings['builds'] = builds = [
-					pf.group('build') for pf in [semver_pattern.match(file) for file in files] if pf]
+					int(pf.group('build')) for pf in [semver_pattern.match(file) for file in files] if pf]
 				self.version_settings['build'] = build = (
 					int(max(builds)) + build_step if builds else build_zero)
 
+				print(f"{self.version_settings=}")
 				# if builds:
 				# 	self.version_settings['build'] = build = int(max(builds)) + build_step
 				# else:
