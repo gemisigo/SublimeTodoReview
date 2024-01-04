@@ -24,6 +24,8 @@ from string import Template
 from TodoReview.BuildVersionDoc import BuildVersionDoc
 from TodoReview.helpers import run_cli
 
+DEBUG_LEVEL = 30
+
 SETTINGS = [
 	"case_sensitive",
 	"encoding",
@@ -91,17 +93,14 @@ class Settings():
 		else:
 			return {"proj": self.proj, "user": self.user.to_dict()}
 
+def printd(self, text: str, debug_level: int = 20, end: str = "\n"):
+	"""Print debug"""
+	if DEBUG_LEVEL <= debug_level:
+		caller = inspect.stack()[1][3]  # will give the caller of foos name, if something called foo
+		dname = f"{self.__class__.__name__}.{caller} [{debug_level}]"
+		print(f"{dname}: {text}", end = end)
 
 class Engine():
-
-	debug_level = 10
-
-	def printd(self, text: str, debug_level: int = 20, end: str = "\n"):
-		"""Print debug"""
-		if self.debug_level <= debug_level:
-			caller = inspect.stack()[1][3]  # will give the caller of foos name, if something called foo
-			dname = f"{self.__class__.__name__}.{caller} [{debug_level}]"
-			print(f"{dname}: {text}", end = end)
 
 	def __init__(self, dirpaths, filepaths, view):
 		self.view = view
@@ -426,7 +425,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			# do replacements
 
 			for victim, placeholder in self.version_settings['placeholders'].items():
-				print(f'replacing [{victim}] with [{placeholder}]')
+				printd(self, f'replacing [{victim}] with [{placeholder}]', 10)
 				wrapped = wrapped.replace(victim, placeholder)
 			f_to.truncate(0)
 			f_to.seek(0)
@@ -472,7 +471,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 		if args.get('open_in_external_editor'):
 			external_editor = self.settings.get("external_editor")
 			if not external_editor:
-				print("TodoReview: external editor not set")
+				printd(self, "TodoReview: external editor not set", 40)
 			else:
 				file_to_pass = self.file_path_and_line('path')
 				run_cli(app = external_editor, args = [file_to_pass], target = "")
@@ -512,7 +511,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 				self.version_settings['build'] = build = (
 					int(max(builds)) + build_step if builds else build_zero)
 
-				print(f"{self.version_settings=}")
+				# self.printd(f"{self.version_settings=}", 10)
 				# if builds:
 				# 	self.version_settings['build'] = build = int(max(builds)) + build_step
 				# else:
@@ -632,12 +631,15 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			number_of_errors += 1
 		if not (minor_description := settings.get('version_minor_description')):
 			print('TodoReview: no version minor description set.')
+			sublime.warning_message('TodoReview: no version minor description set.')
 			number_of_warnings += 1
 		if not (placeholders := settings.get('version_placeholders')):
 			print('TodoReview: no placeholders set.')
+			sublime.warning_message('TodoReview: no placeholders set.')
 			number_of_warnings += 1
 		if not (vdf := settings.get('version_doc_folder', None)):
 			print('TodoReview: no version documentation folder set.')
+			sublime.warning_message('TodoReview: no version documentation folder set.')
 
 		if number_of_errors:
 			return None
