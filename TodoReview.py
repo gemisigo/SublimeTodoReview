@@ -82,7 +82,7 @@ class Settings():
 
 	def get(self, key, default=None):
 		if key not in SETTINGS:
-			sublime.error_message(f"TodoReview: Invalid key [{key}] in project settings.")
+			sublime.message_dialog(f"TodoReview: Invalid key [{key}] in project settings.")
 		return self.temp.get(key, self.proj.get(key, self.user.get(key, default)))
 
 	def to_dict(self, which=None):
@@ -394,7 +394,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 		header = self.version_settings['header']
 		write_back = self.version_settings['write_back']
 		if new_build_number in builds:
-			sublime.error_message('TodoReview: build already exists.')
+			sublime.message_dialog('TodoReview: build already exists.')
 			return
 		copy_from = self.file_path_and_line('path')
 		copy_to = self.versioned_file('path')
@@ -529,7 +529,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 		if args.get('toss'):
 			target_paths = self.settings.get('toss_target_paths', None)
 			if not target_paths:
-				sublime.error_message("TodoReview: no toss target folder defined.")
+				sublime.message_dialog("TodoReview: no toss target folder defined.")
 			else:
 				file_path = self.file_path_and_line('path')
 				numeric_prefix_pattern = re.compile('^(\\d+)_')
@@ -612,34 +612,34 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 		number_of_errors = 0
 		number_of_warnings = 0
 		if not (deployment_folder := settings.get('version_deployment_folder')):
-			sublime.error_message('TodoReview: no version deployment folder set.')
+			sublime.message_dialog('TodoReview: no version deployment folder set.')
 			number_of_errors += 1
 		if not (prefix := settings.get('version_prefix')):
-			sublime.error_message('TodoReview: no version prefix set.')
+			sublime.message_dialog('TodoReview: no version prefix set.')
 			number_of_errors += 1
 		if not (suffix := settings.get('version_suffix')):
-			sublime.error_message('TodoReview: no version suffix set.')
+			sublime.message_dialog('TodoReview: no version suffix set.')
 			number_of_errors += 1
 		if (major := settings.get('version_major')) is None:
-			sublime.error_message('TodoReview: no version major set.')
+			sublime.message_dialog('TodoReview: no version major set.')
 			number_of_errors += 1
 		if not (major_description := settings.get('version_major_description')):
 			print('TodoReview: no version major description set.')
 			number_of_warnings += 1
 		if (minor := settings.get('version_minor')) is None:
-			sublime.error_message('TodoReview: no version minor set.')
+			sublime.message_dialog('TodoReview: no version minor set.')
 			number_of_errors += 1
 		if not (minor_description := settings.get('version_minor_description')):
 			print('TodoReview: no version minor description set.')
-			sublime.warning_message('TodoReview: no version minor description set.')
+			sublime.message_dialog('TodoReview: no version minor description set.')
 			number_of_warnings += 1
 		if not (placeholders := settings.get('version_placeholders')):
 			print('TodoReview: no placeholders set.')
-			sublime.warning_message('TodoReview: no placeholders set.')
+			sublime.message_dialog('TodoReview: no placeholders set.')
 			number_of_warnings += 1
 		if not (vdf := settings.get('version_doc_folder', None)):
 			print('TodoReview: no version documentation folder set.')
-			sublime.warning_message('TodoReview: no version documentation folder set.')
+			sublime.message_dialog('TodoReview: no version documentation folder set.')
 
 		if number_of_errors:
 			return None
