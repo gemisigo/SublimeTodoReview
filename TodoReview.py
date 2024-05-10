@@ -24,7 +24,7 @@ from string import Template
 from TodoReview.BuildVersionDoc import BuildVersionDoc
 from TodoReview.helpers import run_cli
 
-DEBUG_LEVEL = 30
+DEBUG_LEVEL = 10
 
 SETTINGS = [
 	"case_sensitive",
@@ -423,7 +423,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 #			wrapped = f'{versioned_header}{versioned_contents}{versioned_footer}'
 			wrapped = f'{versioned_header}{Template(versioned_contents).safe_substitute(fileversion_dnr=version)}{versioned_footer}'
 			# do replacements
-
+			print(self.version_settings['placeholders'])
 			for victim, placeholder in self.version_settings['placeholders'].items():
 				printd(self, f'replacing [{victim}] with [{placeholder}]', 10)
 				wrapped = wrapped.replace(victim, placeholder)
@@ -433,6 +433,8 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 
 		# version number write-back
 		if write_back:
+			printd(self, f'{version=}')
+			# printd(self, f'{versioned_contents=}')
 			with open(copy_from, 'w', encoding='utf-8') as f_from:
 				# contents = f_from.read()
 				f_from.truncate(0)
