@@ -27,43 +27,43 @@ from TodoReview.helpers import run_cli
 DEBUG_LEVEL = 10
 
 SETTINGS = [
-	"case_sensitive",
-	"encoding",
-	"external_editor",
-	"exclude_files",
-	"exclude_folders",
-	"include_paths",
-	"merge_global_toss_target_paths",
-	"merge_global_versions",
-	"navigation_backward_skip",
-	"navigation_forward_skip",
-	"patterns",
-	"patterns_weight",
-	"render_folder_depth",
-	"render_header_date",
-	"render_header_format",
-	"render_include_folder",
-	"render_maxspaces",
-	"resolve_symlinks",
-	"toss_target_paths",
-	"version_build_step",
-	"version_build_zero",
-	"version_confirm",
-	"version_deployment_folder",
-	"version_deployment_prefix",
-	"version_doc_folder",
-	"version_footer",
-	"version_header",
-	"version_major",
-	"version_major_description",
-	"version_minor",
-	"version_minor_description",
-	"version_placeholders",
-	"version_placeholder_delimiter_close",
-	"version_placeholder_delimiter_open",
-	"version_prefix",
-	"version_suffix",
-	"version_write_back",
+    "case_sensitive",
+    "encoding",
+        "external_editor",
+        "exclude_files",
+        "exclude_folders",
+        "include_paths",
+        "merge_global_toss_target_paths",
+        "merge_global_versions",
+        "navigation_backward_skip",
+        "navigation_forward_skip",
+        "patterns",
+        "patterns_weight",
+        "render_folder_depth",
+        "render_header_date",
+        "render_header_format",
+        "render_include_folder",
+        "render_maxspaces",
+        "resolve_symlinks",
+        "toss_target_paths",
+        "version_build_step",
+        "version_build_zero",
+        "version_confirm",
+        "version_deployment_folder",
+        "version_deployment_prefix",
+        "version_doc_folder",
+        "version_footer",
+        "version_header",
+        "version_major",
+        "version_major_description",
+        "version_minor",
+        "version_minor_description",
+        "version_placeholders",
+        "version_placeholder_delimiter_close",
+        "version_placeholder_delimiter_open",
+        "version_prefix",
+        "version_suffix",
+        "version_write_back",
 ]
 
 
@@ -169,11 +169,11 @@ class Engine():
 							else:
 								priority = 5000
 							yield {
-								'file': p,
-								'patt': patt,
-								'note': note,
-								'line': num,
-								'priority': priority
+							    'file': p,
+							                                'patt': patt,
+							                                    'note': note,
+							                                    'line': num,
+							                                    'priority': priority
 							}
 			except(IOError, UnicodeDecodeError):
 				f = None
@@ -239,7 +239,7 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
 			if not paths and (paths := settings.get('include_paths', False)):
 				# warning: gem's hacking here
 				paths = [os.path.normpath(path) if os.path.isabs(path) else os.path.normpath(
-					os.path.join(project_path, path)) for path in paths]
+				    os.path.join(project_path, path)) for path in paths]
 
 			if args.get('open_files', False):
 				filepaths = [v.file_name() for v in window.views() if v.file_name()]
@@ -258,10 +258,10 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
 
 	def render(self, results, time, count):
 		self.view.run_command('todo_review_render', {
-			"results": results,
-			"time": time,
-			"count": count,
-			"args": self.args
+		    "results": results,
+		            "time": time,
+		                "count": count,
+		                "args": self.args
 		})
 
 
@@ -322,9 +322,9 @@ class TodoReviewRender(sublime_plugin.TextCommand):
 		date = datetime.datetime.now().strftime(datestr)
 		res = '// '
 		res += forms \
-			.replace('%d', date) \
-			.replace('%t', str(self.time)) \
-			.replace('%c', str(self.count))
+		    .replace('%d', date) \
+		            .replace('%t', str(self.time)) \
+		                .replace('%c', str(self.count))
 		res += '\n'
 		self.rview.insert(self.edit, self.rview.size(), res)
 
@@ -333,17 +333,17 @@ class TodoReviewRender(sublime_plugin.TextCommand):
 		for patt, items in self.sorted:
 			items = list(items)
 			res = '\n## %t (%n)\n' \
-				.replace('%t', patt.upper()) \
-				.replace('%n', str(len(items)))
+			    .replace('%t', patt.upper()) \
+			                .replace('%n', str(len(items)))
 			self.rview.insert(self.edit, self.rview.size(), res)
 			for idx, item in enumerate(items, 1):
 				line = '%i. %f' \
-					.replace('%i', str(idx)) \
-					.replace('%f', self.draw_file(item))
+				    .replace('%i', str(idx)) \
+				                    .replace('%f', self.draw_file(item))
 				res = '%f%s%n\n' \
-					.replace('%f', line) \
-					.replace('%s', ' ' * max((self.largest - len(line)), 1)) \
-					.replace('%n', item['note'])
+				    .replace('%f', line) \
+				                    .replace('%s', ' ' * max((self.largest - len(line)), 1)) \
+				                        .replace('%n', item['note'])
 				start = self.rview.size()
 				self.rview.insert(self.edit, start, res)
 				region = sublime.Region(start, self.rview.size())
@@ -369,8 +369,8 @@ class TodoReviewRender(sublime_plugin.TextCommand):
 		else:
 			f = os.path.basename(item['file'])
 		return '%f:%l' \
-			.replace('%f', f) \
-			.replace('%l', str(item['line']))
+		       .replace('%f', f) \
+		               .replace('%l', str(item['line']))
 
 
 class TodoReviewResults(sublime_plugin.TextCommand):
@@ -387,18 +387,20 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 	def rebuild_readmes(self, which_one):
 		# todo: implement rebuild readmes
 		pass
-
-	def accept_version(self, new_build_number):
+# > accept_version
+	# def accept_version(self, new_build_number):
+	def accept_version(self, current_build, next_build):
 		builds = self.version_settings['builds']
 		footer = self.version_settings['footer']
 		header = self.version_settings['header']
 		write_back = self.version_settings['write_back']
-		if new_build_number in builds:
+		if next_build in builds:
 			sublime.message_dialog('TodoReview: build already exists.')
 			return
 		copy_from = self.file_path_and_line('path')
 		copy_to = self.versioned_file('path')
-		version = self.versioned_file('version')
+		next_version = self.versioned_file('version')
+		current_version = (self.version_from_build(current_build) if current_build else "null")
 		shutil.copyfile(copy_from, copy_to)
 
 		# adding of headers/footer
@@ -408,38 +410,54 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			# on second thought, you better not
 
 			# found a better way
-			# versioned_contents = contents.format(fileversion=version)
-			# versioned_header = header.format(fileversion=version)
-			# versioned_footer = footer.format(fileversion=version)
+			# versioned_contents = contents.format(fileversion=next_version)
+			# versioned_header = header.format(fileversion=next_version)
+			# versioned_footer = footer.format(fileversion=next_version)
 			# do this below for older placeholders using {fileversion}
 			contents = contents.replace('$$$', 'triple_dollar_sign')
 			contents = contents.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
 			contents = contents.replace('{fileversion_dnr}','${fileversion_dnr}').replace('$${fileversion_dnr}','${fileversion_dnr}')
 			header = header.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
 			footer = footer.replace('{fileversion}','${fileversion}').replace('$${fileversion}','${fileversion}')
-			versioned_contents = Template(contents).safe_substitute(fileversion=version)
-			versioned_header = Template(header).safe_substitute(fileversion=version)
-			versioned_footer = Template(footer).safe_substitute(fileversion=version)
+			versioned_contents = Template(contents).safe_substitute(fileversion=next_version)
+			versioned_header = Template(header).safe_substitute(fileversion=next_version)
+			versioned_footer = Template(footer).safe_substitute(fileversion=next_version)
 #			wrapped = f'{versioned_header}{versioned_contents}{versioned_footer}'
-			wrapped = f'{versioned_header}{Template(versioned_contents).safe_substitute(fileversion_dnr=version)}{versioned_footer}'
-			# do replacements
+			wrapped = f'{versioned_header}{Template(versioned_contents).safe_substitute(fileversion_dnr=next_version)}{versioned_footer}'
+			# >> do replacements
 			print(self.version_settings['placeholders'])
 			for victim, placeholder in self.version_settings['placeholders'].items():
 				printd(self, f'replacing [{victim}] with [{placeholder}]', 10)
 				wrapped = wrapped.replace(victim, placeholder)
+			wrapped = wrapped.replace('triple_dollar_sign', '$$$')
+
+			deployment_header = f"""/*
+---
+!deployment
+prev_db_version: {current_version}
+actual_db_version: {next_version}
+...
+*/
+
+"""
 			f_to.truncate(0)
 			f_to.seek(0)
-			f_to.write(wrapped.replace('triple_dollar_sign', '$$$'))
+			f_to.write(deployment_header + wrapped)
 
-		# version number write-back
+		# >> next_version number write-back
 		if write_back:
-			printd(self, f'{version=}')
+			printd(self, f'{next_version=}')
 			# printd(self, f'{versioned_contents=}')
 			with open(copy_from, 'w', encoding='utf-8') as f_from:
 				# contents = f_from.read()
 				f_from.truncate(0)
 				f_from.seek(0)
 				f_from.write(versioned_contents.replace('triple_dollar_sign', '$$$'))
+
+	def version_from_build(self, build):
+		major = self.version_settings['major']
+		minor = self.version_settings['minor']
+		return f'{major}.{minor}.{build}'
 
 	def versioned_file(self, part):
 		build = self.version_settings['build']
@@ -507,9 +525,11 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 					os.makedirs(version_path)
 				files = os.listdir(version_path)
 				semver_pattern = re.compile(
-					f'^{prefix}(?:(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<build>\\d+)){suffix}')
+				    f'^{prefix}(?:(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<build>\\d+)){suffix}')
 				self.version_settings['builds'] = builds = [
-					int(pf.group('build')) for pf in [semver_pattern.match(file) for file in files] if pf]
+				    int(pf.group('build')) for pf in [semver_pattern.match(file) for file in files] if pf]
+				current_build = int(max(builds)) if builds else None
+				next_build = (current_build + build_step if builds else build_zero)
 				self.version_settings['build'] = build = (
 					int(max(builds)) + build_step if builds else build_zero)
 
@@ -522,10 +542,10 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 
 				if confirm:
 					self. view.window().show_input_panel(
-						f'The versioned file will be: {new_file_name}, is this corret? Override the build number if not!',
-						str(build), self.accept_version, None, None)
+					    f'The versioned file will be: {new_file_name}, is this corret? Override the build number if not!',
+					                        str(next_build), self.accept_version, None, None)
 				else:
-					self.accept_version(build)
+					self.accept_version(current_build, next_build)
 			return
 
 		if args.get('toss'):
@@ -542,7 +562,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 						os.makedirs(target_path)
 					files = os.listdir(target_path)
 					prefixes = [pf.group(1) for pf in [
-						numeric_prefix_pattern.match(file) for file in files] if pf]
+					    numeric_prefix_pattern.match(file) for file in files] if pf]
 					if prefixes:
 						next_prefix = int(max(prefixes)) + 1
 					else:
@@ -552,7 +572,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 					target = os.path.join(target_path, new_file_name)
 					if os.path.isfile(target):
 						response = sublime.yes_no_cancel_dialog(
-							f"File {target} already exists. Overwrite?")
+						    f"File {target} already exists. Overwrite?")
 						if response == sublime.DIALOG_CANCEL:
 							return
 						elif response == sublime.DIALOG_NO:
@@ -581,16 +601,16 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			if not results:
 				return
 			start_arr = {
-				'down': -1,
-				'up': 0,
-				'down_skip': -1,
-				'up_skip': 0
+			    'down': -1,
+			                'up': 0,
+			                    'down_skip': -1,
+			                    'up_skip': 0
 			}
 			dir_arr = {
-				'down': 1,
-				'up': -1,
-				'down_skip': settings.get('navigation_forward_skip', 10),
-				'up_skip': settings.get('navigation_backward_skip', 10) * -1
+			    'down': 1,
+			                'up': -1,
+			                    'down_skip': settings.get('navigation_forward_skip', 10),
+			                    'up_skip': settings.get('navigation_backward_skip', 10) * -1
 			}
 			sel = int(self.settings.get('selected_result', start_arr[d]))
 			sel = sel + dir_arr[d]
@@ -652,7 +672,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			header = settings.get('version_header', '-- footer: ({fileversion})')
 			confirm = settings.get('version_confirm', False)
 			version_path = os.path.normpath(
-				f'{major}{" - " + major_description if major_description else ""}/{minor}{" - " + minor_description if minor_description else ""}')
+			    f'{major}{" - " + major_description if major_description else ""}/{minor}{" - " + minor_description if minor_description else ""}')
 			deployment_folder = os.path.normpath(deployment_folder)
 			if os.path.isabs(deployment_folder):
 				version_path = os.path.join(deployment_folder, version_path)
@@ -666,26 +686,26 @@ class TodoReviewResults(sublime_plugin.TextCommand):
 			write_back = settings.get('version_write_back', False)
 
 			return {
-				'build': None,
-				'build_step': build_step,
-				'build_zero': build_zero,
-				'builds': None,
-				'confirm': confirm,
-				# 'delimiter_close': delimiter_close,
-				# 'delimiter_open': delimiter_open,
-				'file_name': None,
-				'footer': footer,
-				'header': header,
-				'major': major,
-				'minor': minor,
-				'placeholders': placeholders,
-				'prefix': prefix,
-				'suffix': suffix,
-				'doc_folder': vdf,
-				'version_path': version_path,
-				'write_back': write_back,
-				"deployment_folder": deployment_folder
- 			}
+			    'build': None,
+			                'build_step': build_step,
+			                    'build_zero': build_zero,
+			                    'builds': None,
+			                    'confirm': confirm,
+			                    # 'delimiter_close': delimiter_close,
+			                    # 'delimiter_open': delimiter_open,
+			                    'file_name': None,
+			                    'footer': footer,
+			                    'header': header,
+			                    'major': major,
+			                    'minor': minor,
+			                    'placeholders': placeholders,
+			                    'prefix': prefix,
+			                    'suffix': suffix,
+			                    'doc_folder': vdf,
+			                    'version_path': version_path,
+			                    'write_back': write_back,
+			                    "deployment_folder": deployment_folder
+			}
 
 	def file_path_and_line(self, which_part):
 		#         window = self.view.window()
